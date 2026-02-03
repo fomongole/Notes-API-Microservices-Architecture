@@ -1,4 +1,5 @@
 import { Note, INote } from '../models/note.model';
+import { AppError } from '../utils/AppError';
 
 export const createNote = async (userId: string, noteData: Partial<INote>) => {
     return await Note.create({ ...noteData, author: userId });
@@ -8,7 +9,7 @@ export const getNotes = async (userId: string, query: any) => {
     const filter: any = { author: userId };
 
     if (query.isArchived) filter.isArchived = query.isArchived === 'true';
-    else filter.isArchived = false;
+    else filter.isArchived = false; // Default to showing active notes
 
     if (query.tag) filter.tags = { $in: [query.tag] };
 
@@ -35,7 +36,7 @@ export const getNotes = async (userId: string, query: any) => {
 
 export const getNoteById = async (userId: string, noteId: string) => {
     const note = await Note.findOne({ _id: noteId, author: userId });
-    if (!note) throw new Error('Note not found or access denied');
+    if (!note) throw new AppError('Note not found or access denied', 404);
     return note;
 };
 
@@ -45,12 +46,12 @@ export const updateNote = async (userId: string, noteId: string, updateData: Par
         updateData,
         { new: true, runValidators: true }
     );
-    if (!note) throw new Error('Note not found or access denied');
+    if (!note) throw new AppError('Note not found or access denied', 404);
     return note;
 };
 
 export const deleteNote = async (userId: string, noteId: string) => {
     const note = await Note.findOneAndDelete({ _id: noteId, author: userId });
-    if (!note) throw new Error('Note not found or access denied');
+    if (!note) throw new AppError('Note not found or access denied', 404);
     return note;
 };

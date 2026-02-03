@@ -18,7 +18,4 @@ export const EMAIL_PASS = process.env.EMAIL_PASS as string;
 
 export const CLIENT_URL = process.env.CLIENT_URL as string;
 
-// NEW: Communication Config
-// In local dev, User Service will run on 3002.
-// The '/internal/users' path is a protected route we will create later.
 export const USER_SERVICE_URL = process.env.USER_SERVICE_URL || 'http://localhost:3002/internal/users';

@@ -11,15 +11,16 @@ import { CLIENT_URL, USER_SERVICE_URL } from "../config/env";
 export const register = async (req: Request, res: Response, next: NextFunction) => {
     let newUser;
     try {
-        // 1. Create Identity in Auth DB (Email, Password, Role)
+        const safeRole = 'user';
+
         newUser = await AuthService.createUser({
             email: req.body.email,
             password: req.body.password,
-            role: req.body.role || 'user'
+            role: safeRole
         });
 
-        // 2. Call User Service to create Profile (Username, Bio, Avatar)
-        // We pass the SAME _id to link them.
+        console.log(`✅ [Auth] Identity created for ${newUser.email}. Syncing with User Service...`);
+
         try {
             await axios.post(USER_SERVICE_URL, {
                 _id: newUser._id,
@@ -28,14 +29,14 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
                 bio: req.body.bio,
                 avatar: req.body.avatar
             });
-        } catch (microserviceError) {
-            // ROLLBACK: If User Service fails, delete the Auth Identity
+            console.log(`✅ [Auth] Synced with User Service successfully.`);
+        } catch (microserviceError: any) {
+            // ROLLBACK
             await User.findByIdAndDelete(newUser._id);
-            console.error('Failed to sync with User Service:', microserviceError);
-            throw new AppError('Failed to create user profile. Please try again.', 500);
+            // Here we DO throw a specific error because this is a specific logic failure
+            throw new AppError('Failed to create user profile. Please check server logs.', 500);
         }
 
-        // 3. Success
         const token = generateToken(newUser._id.toString());
         res.status(201).json({ status: 'success', token });
     } catch (error: any) {
@@ -50,7 +51,7 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
 
         res.json({ status: 'success', token });
     } catch (error: any) {
-        next(new AppError(error.message, 401));
+        next(error);
     }
 };
 
@@ -59,10 +60,15 @@ export const forgotPassword = async (req: Request, res: Response, next: NextFunc
         const resetToken = await AuthService.getResetToken(req.body.email);
         const resetUrl = `${CLIENT_URL}/reset-password/${resetToken}`;
 
+        console.log("-------------------------------------------------------");
+        console.log("🔑 PASSWORD RESET TOKEN (Dev Mode):");
+        console.log(resetToken);
+        console.log("-------------------------------------------------------");
+
         try {
             await sendEmail({
                 email: req.body.email,
-                subject: 'Your Password Reset Token (Valid for 10 min)',
+                subject: 'Your Password Reset Token',
                 message: `Reset your password here: ${resetUrl}`,
                 html: getPasswordResetTemplate(resetUrl)
             });
@@ -70,10 +76,10 @@ export const forgotPassword = async (req: Request, res: Response, next: NextFunc
             res.status(200).json({ status: 'success', message: 'Token sent to email!' });
         } catch (emailError) {
             await AuthService.clearResetToken(req.body.email);
-            return next(new AppError('There was an error sending the email. Try again later!', 500));
+            return next(new AppError('Error sending email. Try again later!', 500));
         }
     } catch (error: any) {
-        next(new AppError(error.message, 404));
+        next(error);
     }
 };
 
@@ -83,7 +89,7 @@ export const resetPassword = async (req: Request, res: Response, next: NextFunct
         const token = generateToken(user._id.toString());
         res.status(200).json({ status: 'success', token });
     } catch (error: any) {
-        next(new AppError(error.message, 400));
+        next(error);
     }
 };
 
@@ -97,6 +103,6 @@ export const updatePassword = async (req: Request, res: Response, next: NextFunc
         const token = generateToken(user._id.toString());
         res.status(200).json({ status: 'success', token });
     } catch (error: any) {
-        next(new AppError(error.message, 401));
+        next(error);
     }
 };

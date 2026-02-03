@@ -1,24 +1,41 @@
 import { User, IAuthUser } from '../models/user.model';
 import crypto from 'crypto';
+import { AppError } from '../utils/AppError';
 
 export const createUser = async (userData: Partial<IAuthUser>) => {
-    // Mongoose handles unique email error (code 11000)
     return await User.create(userData);
 };
 
 export const validateUser = async (email: string, pass: string) => {
-    const user = await User.findOne({ email }).select('+password');
+    const user = await User.findOne({ email }).select('+password +isActive');
 
     if (!user || !(await user.comparePassword(pass))) {
-        throw new Error('Invalid email or password');
+        throw new AppError('Invalid email or password', 401);
     }
+
+    if (user.isActive === false) {
+        throw new AppError('This account has been deactivated.', 403);
+    }
+
+    return user;
+};
+
+export const updateUserStatus = async (userId: string, isActive: boolean) => {
+    const user = await User.findByIdAndUpdate(userId, { isActive });
+    if (!user) throw new AppError('User not found in Auth DB', 404);
+    return user;
+};
+
+export const deleteUserPermanently = async (userId: string) => {
+    const user = await User.findByIdAndDelete(userId);
+    if (!user) throw new AppError('User not found in Auth DB', 404);
     return user;
 };
 
 export const getResetToken = async (email: string) => {
     const user = await User.findOne({ email });
     if (!user) {
-        throw new Error('User not found');
+        throw new AppError('User not found', 404);
     }
 
     const resetToken = user.createPasswordResetToken();
@@ -36,7 +53,7 @@ export const resetPassword = async (token: string, newPass: string) => {
     });
 
     if (!user) {
-        throw new Error('Token is invalid or has expired');
+        throw new AppError('Token is invalid or has expired', 400);
     }
 
     user.password = newPass;
@@ -50,10 +67,10 @@ export const resetPassword = async (token: string, newPass: string) => {
 export const updatePassword = async (userId: string, currentPass: string, newPass: string) => {
     const user = await User.findById(userId).select('+password');
 
-    if (!user) throw new Error('User not found');
+    if (!user) throw new AppError('User not found', 404);
 
     if (!(await user.comparePassword(currentPass))) {
-        throw new Error('Incorrect current password');
+        throw new AppError('Incorrect current password', 401);
     }
 
     user.password = newPass;

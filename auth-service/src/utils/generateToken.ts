@@ -6,7 +6,7 @@ const generateToken = (userId: string) => {
         { userId },
         JWT_SECRET,
         {
-            // FIX: Cast to 'any' to satisfy the strict type definition
+            // Cast to 'any' to satisfy the strict type definition
             expiresIn: JWT_EXPIRES_IN as any
         }
     );

@@ -4,7 +4,7 @@ import { JWT_SECRET } from '../config/env';
 
 interface JwtPayload {
     userId: string;
-    role?: string; // If you added role to token in Auth Service
+    role?: string;
 }
 
 export const protect = async (req: Request, res: Response, next: NextFunction) => {

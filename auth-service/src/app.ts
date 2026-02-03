@@ -1,6 +1,7 @@
 import express from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
+import internalRoutes from './routes/internal.routes';
 // import hpp from 'hpp';
 // import mongoSanitize from 'express-mongo-sanitize';
 
@@ -15,13 +16,14 @@ app.set('trust proxy', 1);
 
 app.use(helmet());
 app.use(cors({ origin: CLIENT_URL, credentials: true }));
-app.use('/auth', apiLimiter); // Apply limiter specifically to auth routes
+app.use('/auth', apiLimiter);
 app.use(express.json({ limit: '10kb' }));
 // app.use(mongoSanitize());
 // app.use(hpp());
 
-// Microservice Routes - Only Auth
+//routes
 app.use('/auth', authRoutes);
+app.use('/internal', internalRoutes);
 
 app.get('/health', (req, res) => {
     res.status(200).send('Auth Service is UP 🔐');

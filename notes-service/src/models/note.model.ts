@@ -3,7 +3,7 @@ import { Schema, model, Document, Types } from 'mongoose';
 export interface INote extends Document {
     title: string;
     content: string;
-    author: Types.ObjectId; // Stored as reference ID only
+    author: Types.ObjectId;
     tags: string[];
     isPinned: boolean;
     isArchived: boolean;
@@ -27,8 +27,7 @@ const noteSchema = new Schema<INote>({
     author: {
         type: Schema.Types.ObjectId,
         required: true,
-        index: true // Index this for performance
-        // ref: 'User' <-- REMOVED. We cannot populate across databases easily.
+        index: true // Indexed for performance
     },
     tags: [{ type: String, trim: true }],
     isPinned: { type: Boolean, default: false },

@@ -8,7 +8,6 @@ import {
 } from '../controllers/note.controller';
 import { protect } from '../middlewares/auth.middleware';
 import { validate } from '../middlewares/validate.middleware';
-// Ensure you COPY note.validator.ts from Monolith to src/validators/
 import { createNoteSchema, updateNoteSchema } from '../validators/note.validator';
 
 const router = Router();

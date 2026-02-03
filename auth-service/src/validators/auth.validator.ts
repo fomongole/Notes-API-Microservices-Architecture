@@ -3,12 +3,10 @@ import { z } from 'zod';
 export const loginSchema = z.object({
     body: z.object({
         email: z
-            // Change 'required_error' to 'message'
             .string({ message: "Email is required" })
             .email("Invalid email address"),
 
         password: z
-            // Change 'required_error' to 'message'
             .string({ message: "Password is required" })
             .min(1, "Password cannot be empty")
     })
@@ -22,6 +20,7 @@ export const registerSchema = z.object({
         password: z
             .string({ message: "Password is required" })
             .min(8, "Password must be at least 8 characters"),
+        // Username is optional; if missing, we auto-generate it in the controller
         username: z.string().min(3).optional()
     })
 });

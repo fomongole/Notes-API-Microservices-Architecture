@@ -2,9 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { User } from '../models/user.model';
 import { JWT_SECRET } from '../config/env';
-import {AppError} from "../utils/AppError"; // Import secret from env config for consistency
 
-// FIX 1: Update interface to match the token payload
 interface JwtPayload {
     userId: string;
 }
@@ -20,7 +18,6 @@ export const protect = async (req: Request, res: Response, next: NextFunction) =
             // Verify token
             const decoded = jwt.verify(token, JWT_SECRET) as JwtPayload;
 
-            // FIX 2: Use 'decoded.userId' instead of 'decoded.id'
             req.user = await User.findById(decoded.userId).select('-password') || undefined;
 
             if (!req.user) {
@@ -29,7 +26,7 @@ export const protect = async (req: Request, res: Response, next: NextFunction) =
 
             next();
         } catch (error) {
-            console.error(error); // Optional: log error for debugging
+            console.error(error);
             res.status(401).json({ status: 'fail', message: 'Not authorized' });
         }
     }
@@ -37,18 +34,4 @@ export const protect = async (req: Request, res: Response, next: NextFunction) =
     if (!token) {
         res.status(401).json({ status: 'fail', message: 'Not authorized, no token' });
     }
-};
-
-/**
- * Middleware to restrict access based on User Role.
- * Pass the allowed roles as arguments (e.g., 'admin').
- */
-export const restrictTo = (...roles: string[]) => {
-    return (req: Request, res: Response, next: NextFunction) => {
-        // req.user is guaranteed by 'protect' middleware
-        if (!req.user || !roles.includes(req.user.role)) {
-            return next(new AppError('You do not have permission to perform this action', 403));
-        }
-        next();
-    };
 };

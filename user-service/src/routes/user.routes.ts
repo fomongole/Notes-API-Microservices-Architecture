@@ -10,14 +10,13 @@ import {
 } from '../controllers/user.controller';
 import { protect, restrictTo } from '../middlewares/auth.middleware';
 import { validate } from '../middlewares/validate.middleware';
-import { updateMeSchema } from '../validators/user.validator'; // Ensure you copy this file!
+import { updateMeSchema } from '../validators/user.validator';
 
 const router = Router();
 
-// Apply Auth Guard
 router.use(protect);
 
-// Current User Operations
+// User Operations
 router.get('/me', getMe);
 router.patch('/update-me', validate(updateMeSchema), updateMe);
 router.delete('/delete-me', deleteMe);

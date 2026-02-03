@@ -1,11 +1,13 @@
 import { Request, Response, NextFunction } from 'express';
 import * as NoteService from '../services/note.service';
-import { AppError } from '../utils/AppError';
 
 export const createNote = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const userId = req.user!._id; // ! asserts it exists (checked by protect)
+        // req.user is guaranteed by 'protect' middleware
+        const userId = req.user!._id;
+
         const note = await NoteService.createNote(userId, req.body);
+
         res.status(201).json({ status: 'success', data: { note } });
     } catch (error) { next(error); }
 };
@@ -14,6 +16,7 @@ export const getAllNotes = async (req: Request, res: Response, next: NextFunctio
     try {
         const userId = req.user!._id;
         const result = await NoteService.getNotes(userId, req.query);
+
         res.status(200).json({
             status: 'success',
             results: result.notes.length,
@@ -28,23 +31,32 @@ export const getAllNotes = async (req: Request, res: Response, next: NextFunctio
 export const getNote = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const userId = req.user!._id;
-        const note = await NoteService.getNoteById(userId, req.params.id as string);
+        const noteId = req.params.id;
+
+        const note = await NoteService.getNoteById(userId,noteId as string);
+
         res.status(200).json({ status: 'success', data: { note } });
-    } catch (error: any) { next(new AppError(error.message, 404)); }
+    } catch (error) { next(error); }
 };
 
 export const updateNote = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const userId = req.user!._id;
-        const note = await NoteService.updateNote(userId, req.params.id as string, req.body);
+        const noteId = req.params.id;
+
+        const note = await NoteService.updateNote(userId, noteId as string, req.body);
+
         res.status(200).json({ status: 'success', data: { note } });
-    } catch (error: any) { next(new AppError(error.message, 404)); }
+    } catch (error) { next(error); }
 };
 
 export const deleteNote = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const userId = req.user!._id;
-        await NoteService.deleteNote(userId, req.params.id as string);
+        const noteId = req.params.id;
+
+        await NoteService.deleteNote(userId, noteId as string);
+
         res.status(204).json({ status: 'success', data: null });
-    } catch (error: any) { next(new AppError(error.message, 404)); }
+    } catch (error) { next(error); }
 };

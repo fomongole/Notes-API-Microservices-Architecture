@@ -1,4 +1,4 @@
-import { Schema, model, Document } from 'mongoose';
+import { Schema, model, Document, Types } from 'mongoose';
 
 export interface IUser extends Document {
     email: string;
@@ -12,10 +12,13 @@ export interface IUser extends Document {
 }
 
 const userSchema = new Schema<IUser>({
-    // We strictly define _id requirements if we want to be explicit,
-    // but Mongoose allows overriding _id by default on create().
     email: { type: String, required: true, unique: true, lowercase: true },
-    username: { type: String, trim: true },
+    username: {
+        type: String,
+        trim: true,
+        unique: true,  // Enforces uniqueness
+        sparse: true   // Allows multiple users to have 'undefined' username if needed
+    },
     bio: { type: String, maxlength: 250, default: null },
     avatar: { type: String, default: null },
     role: { type: String, enum: ['user', 'admin'], default: 'user' },
@@ -24,7 +27,6 @@ const userSchema = new Schema<IUser>({
     timestamps: true
 });
 
-// QUERY MIDDLEWARE: Hide inactive users
 userSchema.pre(/^find/, function(this: any, next) {
     if (!this.getOptions().skipInactive) {
         this.find({ isActive: { $ne: false } });
