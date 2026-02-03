@@ -1,23 +1,15 @@
-import mongoose from "mongoose";
-import { DB_URI, PORT } from "./config/env";
+import { PORT } from "./config/env";
 import app from "./app";
+import { connectDB } from "./config/db";
 
 const startServer = async () => {
-    try {
-        if(!DB_URI) throw new Error("❌ The DB URI is missing!");
+    // 1. Connect to SQL Database
+    await connectDB();
 
-        console.log("😊 Connecting to Notes database...");
-        await mongoose.connect(DB_URI);
-        console.log("✅ Connected to Notes database!");
-
-        app.listen(PORT, () => {
-            console.log(`📒 Notes Service running on http://localhost:${PORT}`);
-        });
-
-    } catch (err) {
-        console.error(`❌ Error starting Notes Service: ${err}`);
-        process.exit(1);
-    }
+    // 2. Start Express App
+    app.listen(PORT, () => {
+        console.log(`📒 Notes Service (Postgres) running on http://localhost:${PORT}`);
+    });
 }
 
 startServer();

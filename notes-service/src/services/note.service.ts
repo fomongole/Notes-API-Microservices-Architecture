@@ -1,57 +1,91 @@
-import { Note, INote } from '../models/note.model';
+import { prisma } from '../config/db';
 import { AppError } from '../utils/AppError';
+import { Prisma } from "@prisma/client";
 
-export const createNote = async (userId: string, noteData: Partial<INote>) => {
-    return await Note.create({ ...noteData, author: userId });
+export const createNote = async (userId: string, noteData: any) => {
+    return await prisma.note.create({
+        data: {
+            ...noteData,
+            author: userId
+        }
+    });
 };
 
 export const getNotes = async (userId: string, query: any) => {
-    const filter: any = { author: userId };
+    // 1. Build the "Where" clause dynamically
+    const where: Prisma.NoteWhereInput = {
+        author: userId,
+        isArchived: query.isArchived === 'true' // defaults to false if undefined
+    };
 
-    if (query.isArchived) filter.isArchived = query.isArchived === 'true';
-    else filter.isArchived = false; // Default to showing active notes
+    // Filter by Tag (Postgres Array containment)
+    if (query.tag) {
+        where.tags = {
+            has: query.tag
+        };
+    }
 
-    if (query.tag) filter.tags = { $in: [query.tag] };
-
+    // Search (Case insensitive partial match)
     if (query.search) {
-        filter.$or = [
-            { title: { $regex: query.search, $options: 'i' } },
-            { content: { $regex: query.search, $options: 'i' } }
+        where.OR = [
+            { title: { contains: query.search, mode: 'insensitive' } },
+            { content: { contains: query.search, mode: 'insensitive' } }
         ];
     }
 
+    // 2. Pagination
     const page = Number(query.page) || 1;
     const limit = Number(query.limit) || 10;
     const skip = (page - 1) * limit;
 
-    const notes = await Note.find(filter)
-        .sort({ isPinned: -1, updatedAt: -1 })
-        .skip(skip)
-        .limit(limit);
-
-    const total = await Note.countDocuments(filter);
+    // 3. Execute Queries (Parallelly for speed)
+    const [notes, total] = await Promise.all([
+        prisma.note.findMany({
+            where,
+            orderBy: [
+                { isPinned: 'desc' },
+                { updatedAt: 'desc' }
+            ],
+            skip,
+            take: limit
+        }),
+        prisma.note.count({ where })
+    ]);
 
     return { notes, total, page, pages: Math.ceil(total / limit) };
 };
 
 export const getNoteById = async (userId: string, noteId: string) => {
-    const note = await Note.findOne({ _id: noteId, author: userId });
+    const note = await prisma.note.findFirst({
+        where: {
+            id: noteId,
+            author: userId
+        }
+    });
+
     if (!note) throw new AppError('Note not found or access denied', 404);
     return note;
 };
 
-export const updateNote = async (userId: string, noteId: string, updateData: Partial<INote>) => {
-    const note = await Note.findOneAndUpdate(
-        { _id: noteId, author: userId },
-        updateData,
-        { new: true, runValidators: true }
-    );
-    if (!note) throw new AppError('Note not found or access denied', 404);
+export const updateNote = async (userId: string, noteId: string, updateData: any) => {
+    // Check ownership first
+    const exists = await prisma.note.findFirst({ where: { id: noteId, author: userId }});
+    if(!exists) throw new AppError('Note not found or access denied', 404);
+
+    const note = await prisma.note.update({
+        where: { id: noteId },
+        data: updateData
+    });
+
     return note;
 };
 
 export const deleteNote = async (userId: string, noteId: string) => {
-    const note = await Note.findOneAndDelete({ _id: noteId, author: userId });
-    if (!note) throw new AppError('Note not found or access denied', 404);
-    return note;
+    // Check ownership first
+    const exists = await prisma.note.findFirst({ where: { id: noteId, author: userId }});
+    if(!exists) throw new AppError('Note not found or access denied', 404);
+
+    await prisma.note.delete({
+        where: { id: noteId }
+    });
 };

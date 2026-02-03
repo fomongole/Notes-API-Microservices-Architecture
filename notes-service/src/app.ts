@@ -2,7 +2,7 @@ import express from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
 // import hpp from 'hpp';
-import mongoSanitize from 'express-mongo-sanitize';
+// import mongoSanitize from 'express-mongo-sanitize';
 
 import noteRoutes from './routes/note.routes';
 import { errorHandler, notFound } from "./middlewares/error.middleware";
