@@ -83,7 +83,7 @@ export const deleteUser = async (req: Request, res: Response, next: NextFunction
         } catch (error: any) {
             console.error(`❌ [User] Failed to sync hard delete: ${error.message}`);
             // Even if sync fails, we already deleted the profile.
-            // Will later implement Message Queues for robustness.
+            // TODO(): Implement Message Queues for robustness.
         }
 
         res.status(204).json({ status: 'success', data: null });
