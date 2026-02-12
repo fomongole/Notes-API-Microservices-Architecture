@@ -22,8 +22,8 @@ const sendEmail = async (options: EmailOptions) => {
         from: '"Notes App Support" <support@notesapp.com>',
         to: options.email,
         subject: options.subject,
-        text: options.message, // Fallback for old email clients
-        html: options.html     // The pretty version!
+        text: options.message,
+        html: options.html
     };
 
     await transporter.sendMail(mailOptions);
