@@ -14,7 +14,6 @@ export const validate = (schema: AnyZodObject) =>
             });
             next();
         } catch (error) {
-            // Pass the error to the Global Error Handler!
             next(error);
         }
     };
